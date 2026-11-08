@@ -1,0 +1,30 @@
+#!/bin/sh
+# ca-certs-n900: put the Mozilla root certificates that the phone lacks into the private domain "ssl-ca" of a user
+# (the Maemo certificate manager; MicroB reads it). The system domain common-ca (2010) is not touched.
+#   ca-certs-n900 install [user]   add the missing roots (default user: user)
+#   ca-certs-n900 remove  [user]   remove exactly the roots this package added
+#   ca-certs-n900 status  [user]   show how many are installed
+DIR=/opt/ca-certs-n900
+CMD=${1:-status}
+U=${2:-user}
+run() { if [ "$(id -un)" = "$U" ]; then sh -c "$1"; else su "$U" -c "$1"; fi; }
+case "$CMD" in
+install)
+    have=$(run 'cmcli -T common-ca -L 2>/dev/null' | awk '{print $1}')
+    n=0; list=
+    for f in "$DIR"/certs/*.pem; do
+        id=$(basename "$f" .pem)
+        echo "$have" | grep -q "^$id$" && continue
+        list="$list $f"; n=$((n+1))
+    done
+    [ "$n" -gt 0 ] && run "cmcli -p ssl-ca -a $list" >/dev/null
+    echo "ca-certs-n900: $n certificates added for $U" ;;
+remove)
+    for id in $(cat "$DIR/ids"); do run "cmcli -p ssl-ca -r $id" >/dev/null 2>&1; done
+    echo "ca-certs-n900: certificates removed for $U" ;;
+status)
+    got=$(run 'cmcli -t ssl-ca -L 2>/dev/null' | awk '{print $1}')
+    n=0; for id in $(cat "$DIR/ids"); do echo "$got" | grep -q "^$id$" && n=$((n+1)); done
+    echo "ca-certs-n900: $n of $(wc -l < "$DIR/ids") certificates installed for $U" ;;
+*) echo "Usage: ca-certs-n900 install|remove|status [user]" >&2; exit 2 ;;
+esac
