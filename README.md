@@ -20,6 +20,9 @@ gives a protocol error). The certificates help only for sites that still accept 
 
 ## Verification
 The mechanism was verified with a temporary test CA and `openssl s_server -tls1` on a PC: `cmcli -v` fails without the CA, gives
-"Verified OK" with it, and MicroB opens the page without a warning.
+"Verified OK" with it, and MicroB opens the page without a warning. A real public site works too: `https://tls-v1-0.badssl.com:1010/`
+(TLS 1.0, certificate chain of Let's Encrypt, root ISRG Root X1 added by this package) opens in MicroB without a certificate warning:
+
+![MicroB on the N900 showing tls-v1-0.badssl.com](docs/microb-tls10-badssl.png)
 
 Build (in the N900 project): `make debs APP=ca-certs-n900`, tests on the phone: `make -C apps/ca-certs-n900 test`.
